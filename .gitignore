@@ -1,0 +1,22 @@
+# Credentials & Secrets
+.env
+
+# Local Database & State Files
+seen_ideas.json
+scheduler_state.json
+sources.json
+
+# Local Output Folders & Logs
+emails_sent/
+*.log
+
+# Python Artifacts
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Editor Settings
+.vscode/
+.idea/
+.DS_Store
