@@ -7,39 +7,36 @@ from gemini_client import call_gemini
 from email_sender import generate_html_email, send_email
 
 def load_seen_ideas() -> list:
-    """Loads previously generated ideas from file."""
-    if not config.SEEN_IDEAS_FILE.exists():
-        return []
+    """Loads previously generated ideas from Gist or local file."""
     try:
-        with open(config.SEEN_IDEAS_FILE, "r", encoding="utf-8") as f:
-            data = json.load(f)
-            if isinstance(data, list):
-                return data
+        import storage
+        return storage.load_seen_ideas()
     except Exception as e:
-        print(f"Warning: Failed to load seen ideas, starting fresh: {e}")
+        print(f"Warning: Failed to load seen ideas: {e}")
     return []
 
 def save_new_ideas(new_ideas: list):
-    """Saves new ideas to the seen ideas file."""
+    """Saves new ideas to the seen ideas file/Gist."""
     seen = load_seen_ideas()
     seen.extend(new_ideas)
     try:
-        with open(config.SEEN_IDEAS_FILE, "w", encoding="utf-8") as f:
-            json.dump(seen, f, indent=2)
+        import storage
+        storage.save_seen_ideas(seen)
         print(f"Saved {len(new_ideas)} new ideas to seen list. Total seen: {len(seen)}")
     except Exception as e:
         print(f"Error saving seen ideas: {e}")
 
 def load_sources() -> list:
-    """Loads sources list from file."""
-    if not config.SOURCES_FILE.exists():
-        print("sources.json not found. Running source research first...")
-        from research_sources import research_and_update_sources
-        research_and_update_sources()
-    
+    """Loads sources list from Gist or local file."""
     try:
-        with open(config.SOURCES_FILE, "r", encoding="utf-8") as f:
-            return json.load(f)
+        import storage
+        sources = storage.load_sources()
+        if not sources:
+            print("sources list is empty or not found. Running source research first...")
+            from research_sources import research_and_update_sources
+            research_and_update_sources()
+            sources = storage.load_sources()
+        return sources
     except Exception as e:
         print(f"Error loading sources: {e}")
         return []

@@ -119,14 +119,13 @@ def research_and_update_sources():
             print("Falling back to default high-quality sources.")
             sources = DEFAULT_SOURCES
 
-    # Write to file
+    # Write to file/Gist using storage coordinator
     try:
-        with open(config.SOURCES_FILE, "w", encoding="utf-8") as f:
-            json.dump(sources, f, indent=2)
-        print(f"Successfully updated sources file: {config.SOURCES_FILE}")
+        import storage
+        storage.save_sources(sources)
         return True
     except Exception as e:
-        print(f"Critical Error saving sources file: {e}")
+        print(f"Critical Error saving sources: {e}")
         return False
 
 if __name__ == "__main__":

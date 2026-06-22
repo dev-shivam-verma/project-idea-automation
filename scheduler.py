@@ -35,28 +35,22 @@ def start_health_server(port: int):
         print(f"[{datetime.now()}] Failed to start health check server: {e}")
 
 def load_state() -> dict:
-    """Loads scheduler state from JSON file."""
-    if not config.SCHEDULER_STATE_FILE.exists():
-        # Epoch time defaults to force immediate run on first start
-        return {
-            "last_sources_research": "1970-01-01T00:00:00",
-            "last_ideas_generation": "1970-01-01T00:00:00"
-        }
+    """Loads scheduler state from Gist or local file."""
     try:
-        with open(config.SCHEDULER_STATE_FILE, "r", encoding="utf-8") as f:
-            return json.load(f)
+        import storage
+        return storage.load_scheduler_state()
     except Exception as e:
-        print(f"Warning: Failed to load scheduler state, starting fresh: {e}")
+        print(f"Warning: Failed to load scheduler state: {e}")
         return {
             "last_sources_research": "1970-01-01T00:00:00",
             "last_ideas_generation": "1970-01-01T00:00:00"
         }
 
 def save_state(state: dict):
-    """Saves scheduler state to JSON file."""
+    """Saves scheduler state to local file and syncs with Gist if enabled."""
     try:
-        with open(config.SCHEDULER_STATE_FILE, "w", encoding="utf-8") as f:
-            json.dump(state, f, indent=2)
+        import storage
+        storage.save_scheduler_state(state)
     except Exception as e:
         print(f"Error saving scheduler state: {e}")
 

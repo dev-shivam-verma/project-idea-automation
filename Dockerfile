@@ -15,6 +15,7 @@ COPY config.py \
      generate_ideas.py \
      scheduler.py \
      test_run.py \
+     storage.py \
      ./
 
 # Create directories for outputs and persistence
