@@ -1,4 +1,7 @@
 import smtplib
+import urllib.request
+import json
+import ssl
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from datetime import datetime
@@ -198,9 +201,97 @@ def generate_html_email(ideas: list) -> str:
     """
     return html_content
 
+def send_via_resend(subject: str, html_content: str) -> bool:
+    """Sends email using Resend API over HTTPS (Port 443)."""
+    if not config.RESEND_API_KEY or not config.RECIPIENT_EMAIL:
+        return False
+    try:
+        print("Connecting to Resend Email API via HTTPS (Port 443)...")
+        url = "https://api.resend.com/emails"
+        
+        # If sending from a domain that is not verified on Resend, the free tier requires 'onboarding@resend.dev'
+        sender = config.SENDER_EMAIL
+        if not sender or "gmail.com" in sender:
+            sender = "onboarding@resend.dev"
+            
+        payload = {
+            "from": f"Project Brief <{sender}>",
+            "to": [config.RECIPIENT_EMAIL],
+            "subject": subject,
+            "html": html_content
+        }
+        
+        req = urllib.request.Request(
+            url,
+            data=json.dumps(payload).encode("utf-8"),
+            headers={
+                "Authorization": f"Bearer {config.RESEND_API_KEY}",
+                "Content-Type": "application/json"
+            },
+            method="POST"
+        )
+        
+        ctx = ssl.create_default_context()
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
+        
+        with urllib.request.urlopen(req, context=ctx, timeout=15) as response:
+            res_data = response.read().decode("utf-8")
+            res_json = json.loads(res_data)
+            if "id" in res_json:
+                print(f"Successfully sent email via Resend API! Message ID: {res_json['id']}")
+                return True
+            else:
+                print(f"Failed to send email via Resend API: {res_data}")
+                return False
+    except Exception as e:
+        print(f"Error sending via Resend API: {e}")
+        return False
+
+def send_via_sendgrid(subject: str, html_content: str) -> bool:
+    """Sends email using SendGrid API over HTTPS (Port 443)."""
+    if not config.SENDGRID_API_KEY or not config.RECIPIENT_EMAIL:
+        return False
+    try:
+        print("Connecting to SendGrid Email API via HTTPS (Port 443)...")
+        url = "https://api.sendgrid.com/v3/mail/send"
+        
+        sender = config.SENDER_EMAIL if config.SENDER_EMAIL else "onboarding@sendgrid.dev"
+        payload = {
+            "personalizations": [{"to": [{"email": config.RECIPIENT_EMAIL}]}],
+            "from": {"email": sender, "name": "Project Brief"},
+            "subject": subject,
+            "content": [{"type": "text/html", "value": html_content}]
+        }
+        
+        req = urllib.request.Request(
+            url,
+            data=json.dumps(payload).encode("utf-8"),
+            headers={
+                "Authorization": f"Bearer {config.SENDGRID_API_KEY}",
+                "Content-Type": "application/json"
+            },
+            method="POST"
+        )
+        
+        ctx = ssl.create_default_context()
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
+        
+        with urllib.request.urlopen(req, context=ctx, timeout=15) as response:
+            if response.status in (200, 201, 202):
+                print("Successfully sent email via SendGrid API!")
+                return True
+            else:
+                print(f"Failed to send email via SendGrid API: HTTP Status {response.status}")
+                return False
+    except Exception as e:
+        print(f"Error sending via SendGrid API: {e}")
+        return False
+
 def send_email(subject: str, html_content: str) -> bool:
     """
-    Sends email via SMTP or falls back to writing to files if SMTP is unconfigured.
+    Sends email via Resend, SendGrid, or falls back to SMTP.
     """
     # Write to local file first as fallback/logs
     timestamp_str = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -213,7 +304,17 @@ def send_email(subject: str, html_content: str) -> bool:
     except Exception as e:
         print(f"Warning: Failed to save local copy of email: {e}")
 
-    # Check config
+    # 1. Try Resend HTTP API if key is set
+    if config.RESEND_API_KEY:
+        if send_via_resend(subject, html_content):
+            return True
+
+    # 2. Try SendGrid HTTP API if key is set
+    if config.SENDGRID_API_KEY:
+        if send_via_sendgrid(subject, html_content):
+            return True
+
+    # 3. Fallback to classic SMTP
     if not config.SMTP_USER or not config.SMTP_PASSWORD or not config.RECIPIENT_EMAIL:
         print("SMTP Credentials or Recipient Email not fully configured. Email was saved locally.")
         return False
