@@ -230,7 +230,7 @@ def send_email(subject: str, html_content: str) -> bool:
         
         # Connect and Send
         print(f"Connecting to SMTP server {config.SMTP_SERVER}:{config.SMTP_PORT}...")
-        with smtplib.SMTP(config.SMTP_SERVER, config.SMTP_PORT) as server:
+        with smtplib.SMTP(config.SMTP_SERVER, config.SMTP_PORT, timeout=15) as server:
             server.starttls()
             server.login(config.SMTP_USER, config.SMTP_PASSWORD)
             server.sendmail(config.SENDER_EMAIL, config.RECIPIENT_EMAIL, msg.as_string())
