@@ -1,9 +1,38 @@
 import json
 import time
+import os
+import threading
+from http.server import SimpleHTTPRequestHandler, HTTPServer
 from datetime import datetime, timedelta
 import config
 from research_sources import research_and_update_sources
 from generate_ideas import generate_and_email_ideas
+
+class HealthCheckHandler(SimpleHTTPRequestHandler):
+    """Simple HTTP request handler to return a 200 OK for cloud health checks."""
+    def do_GET(self):
+        if self.path in ('/', '/healthz', '/health'):
+            self.send_response(200)
+            self.send_header('Content-type', 'application/json')
+            self.end_headers()
+            self.wfile.write(b'{"status": "healthy", "service": "project-idea-automation"}')
+        else:
+            self.send_response(404)
+            self.end_headers()
+            self.wfile.write(b'{"error": "Not Found"}')
+            
+    def log_message(self, format, *args):
+        # Suppress logging to keep standard out clean
+        pass
+
+def start_health_server(port: int):
+    """Starts the HTTP server on the designated port."""
+    try:
+        server = HTTPServer(('0.0.0.0', port), HealthCheckHandler)
+        print(f"[{datetime.now()}] Health check server listening on port {port}...")
+        server.serve_forever()
+    except Exception as e:
+        print(f"[{datetime.now()}] Failed to start health check server: {e}")
 
 def load_state() -> dict:
     """Loads scheduler state from JSON file."""
@@ -34,6 +63,13 @@ def save_state(state: dict):
 def run_scheduler():
     print(f"[{datetime.now()}] Project Idea Automation Scheduler Started.")
     config.print_config_status()
+    
+    # Read assigned port from environment, defaulting to 8080
+    port = int(os.getenv("PORT", "8080"))
+    
+    # Start health check HTTP server in a separate background daemon thread
+    threading.Thread(target=start_health_server, args=(port,), daemon=True).start()
+
     
     # Intervals
     SOURCES_INTERVAL = timedelta(days=1)

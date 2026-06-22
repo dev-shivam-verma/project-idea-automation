@@ -20,5 +20,8 @@ COPY config.py \
 # Create directories for outputs and persistence
 RUN mkdir -p /app/emails_sent
 
+# Expose default HTTP port for health checks
+EXPOSE 8080
+
 # Execute the stateful scheduler daemon
 CMD ["python", "scheduler.py"]
