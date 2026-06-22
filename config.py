@@ -4,13 +4,21 @@ from pathlib import Path
 # Base Directory
 BASE_DIR = Path(__file__).resolve().parent
 
+# Check for persistent data directory (useful for container volumes)
+DATA_DIR_PATH = os.getenv("DATA_DIR", "")
+if DATA_DIR_PATH:
+    DATA_DIR = Path(DATA_DIR_PATH)
+else:
+    DATA_DIR = BASE_DIR
+
 # Data Files
-SOURCES_FILE = BASE_DIR / "sources.json"
-SEEN_IDEAS_FILE = BASE_DIR / "seen_ideas.json"
-SCHEDULER_STATE_FILE = BASE_DIR / "scheduler_state.json"
-EMAILS_DIR = BASE_DIR / "emails_sent"
+SOURCES_FILE = DATA_DIR / "sources.json"
+SEEN_IDEAS_FILE = DATA_DIR / "seen_ideas.json"
+SCHEDULER_STATE_FILE = DATA_DIR / "scheduler_state.json"
+EMAILS_DIR = DATA_DIR / "emails_sent"
 
 # Ensure directories exist
+DATA_DIR.mkdir(exist_ok=True, parents=True)
 EMAILS_DIR.mkdir(exist_ok=True, parents=True)
 
 # Try to load environment variables from .env file manually to keep it zero-dependency
