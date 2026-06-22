@@ -2,9 +2,9 @@ import json
 import urllib.request
 import urllib.error
 import ssl
-from config import GEMINI_API_KEY
+from config import GEMINI_API_KEY, GEMINI_MODEL
 
-def call_gemini(prompt: str, response_json: bool = False, use_search: bool = False, model: str = "gemini-2.5-flash") -> str:
+def call_gemini(prompt: str, response_json: bool = False, use_search: bool = False, model: str = GEMINI_MODEL) -> str:
     """
     Calls the Gemini API using urllib.request.
     response_json: If True, forces the response to be in JSON format.
