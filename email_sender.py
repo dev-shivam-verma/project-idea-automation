@@ -214,8 +214,12 @@ def send_via_resend(subject: str, html_content: str) -> bool:
         if not sender or "gmail.com" in sender:
             sender = "onboarding@resend.dev"
             
+        from_email = sender
+        if sender != "onboarding@resend.dev":
+            from_email = f"Project Brief <{sender}>"
+            
         payload = {
-            "from": f"Project Brief <{sender}>",
+            "from": from_email,
             "to": [config.RECIPIENT_EMAIL],
             "subject": subject,
             "html": html_content
@@ -226,7 +230,8 @@ def send_via_resend(subject: str, html_content: str) -> bool:
             data=json.dumps(payload).encode("utf-8"),
             headers={
                 "Authorization": f"Bearer {config.RESEND_API_KEY}",
-                "Content-Type": "application/json"
+                "Content-Type": "application/json",
+                "User-Agent": "curl/8.0"
             },
             method="POST"
         )
@@ -269,7 +274,8 @@ def send_via_sendgrid(subject: str, html_content: str) -> bool:
             data=json.dumps(payload).encode("utf-8"),
             headers={
                 "Authorization": f"Bearer {config.SENDGRID_API_KEY}",
-                "Content-Type": "application/json"
+                "Content-Type": "application/json",
+                "User-Agent": "curl/8.0"
             },
             method="POST"
         )
